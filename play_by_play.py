@@ -61,11 +61,11 @@ def get_pbp(year, season_type, week):
     df = json_normalize(json)
     return df
 
-def save_pbp(pbp, year, rp, week):
-    dir = './output/'+str(year)+'/'+str(rp)+'/'
+def save_pbp(pbp, year):
+    dir = './output/'+str(year)+'/'
     # create directory if it doesn't exist
     pathlib.Path(dir).mkdir(parents=True, exist_ok=True)
-    file_path = dir + 'week_'+str(week)+'.csv'
+    file_path = dir + str(year)+'_pbp.csv'
     pbp.to_csv(file_path, index=False)
     return
 
@@ -80,20 +80,24 @@ if __name__ == "__main__":
     weeks = get_weeks(game_list, years)
 
     years = [2018]
-    test = get_pbp(2018, 'regular', 8)
+
     for year in years:
         print('GATHERING ' + str(year) + ' SEASON PLAY BY PLAY DATA')
+        season_pbp = pd.DataFrame()
         for rp in reg_post:
             if rp == 'regular':
                 for week in tqdm(weeks):
                     season_type = 'regular'
                     week_pbp = get_pbp(year, season_type, week)
-                    save_pbp(week_pbp, year, rp, week)
+                    season_pbp = pd.concat([season_pbp, week_pbp])
             else:
                 week = 1
                 season_type = 'postseason'
                 post_pbp = get_pbp(year, season_type, week)
-                save_pbp(post_pbp, year, rp, week)
+                season_pbp = pd.concat([season_pbp, post_pbp])
+
+
+        save_pbp(season_pbp, year)
 
 
 
