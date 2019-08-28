@@ -3,8 +3,8 @@
 API documentation: https://api.collegefootballdata.com/api/docs/?url=/api-docs.json
 
 Required Python packages:
-  requests
-  tqdm (not an absolute must--can remove it from code if desired)
+  requests  
+  tqdm (not an absolute must--can remove it from code if desired)  
 
 
 ### Usage:

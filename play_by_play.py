@@ -79,8 +79,6 @@ if __name__ == "__main__":
     reg_post = reg_post(game_list)
     weeks = get_weeks(game_list, years)
 
-    years = [2018]
-
     for year in years:
         print('GATHERING ' + str(year) + ' SEASON PLAY BY PLAY DATA')
         season_pbp = pd.DataFrame()
