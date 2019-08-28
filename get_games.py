@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-
 import datetime
 import json
 import requests
@@ -19,6 +17,7 @@ SETTINGS = {
     "postseason":True
 }
 API_URL = 'https://api.collegefootballdata.com/games'
+OUTPUT_PATH = './output/games.csv'
 
 
 def get_url(url):
@@ -34,7 +33,10 @@ def get_games():
     post = SETTINGS["postseason"]
     api = API_URL
 
-    years=[2018]
+    # test
+    # years=[2018]
+
+    ay_df = pd.DataFrame()
 
     for year in tqdm(years):
         # initialize
@@ -46,14 +48,12 @@ def get_games():
             req_url = api + url_append
             reg_json = get_url(req_url)
             reg_df = json_normalize(reg_json)
-            print(len(reg_df))
 
         if post:
             url_append = '?year='+str(year)+'&seasonType=postseason'
             req_url = api + url_append
             post_json = get_url(req_url)
             post_df = json_normalize(post_json)
-            print(len(post_df))
 
         if (len(reg_df) > 0) and (len(post_df) > 0):
             df = pd.concat([reg_df,post_df])
@@ -62,13 +62,20 @@ def get_games():
         else:
             df = post_df
 
-        return df
+        if len(ay_df) > 0:
+            ay_df = pd.concat([ay_df,df])
+        else:
+            ay_df = df
 
-    return None
+    return ay_df
 
-def save_games():
-    pass
+
+def save_games(games):
+    games.to_csv(OUTPUT_PATH, index=False)
+    return
 
 if __name__ == "__main__":
+    # GET request
     games = get_games()
+
     save_games(games)
