@@ -69,8 +69,17 @@ def save_pbp(pbp, year):
     pbp.to_csv(file_path, index=False)
     return
 
-
-
+def add_gameid(pbp, year, season_type, week):
+    if 'home' in list(pbp):
+        if season_type == 'regular':
+            st = 'REG'
+        elif season_type == 'postseason':
+            st= 'POST'
+        pbp['game_id'] = str(year) + st + str(week) + pbp['home'] +'v'+ pbp['away']
+        pbp['game_id'] = pbp['game_id'].str.replace(" ","")
+        pbp['game_id'] = pbp['game_id'].str.lower()
+    return pbp
+    
 if __name__ == "__main__":
     game_list = get_game_list()
 
@@ -87,11 +96,13 @@ if __name__ == "__main__":
                 for week in tqdm(weeks):
                     season_type = 'regular'
                     week_pbp = get_pbp(year, season_type, week)
+                    week_pbp = add_gameid(week_pbp, year, season_type, week)
                     season_pbp = pd.concat([season_pbp, week_pbp])
             else:
                 week = 1
                 season_type = 'postseason'
                 post_pbp = get_pbp(year, season_type, week)
+                post_pbp = add_gameid(post_pbp, year, season_type, week)
                 season_pbp = pd.concat([season_pbp, post_pbp])
 
 
