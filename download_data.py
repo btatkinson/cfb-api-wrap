@@ -10,7 +10,7 @@ from pandas.io.json import json_normalize
 from tqdm import tqdm
 
 GL_PATH='./output/games.csv'
-BASE_URL='https://api.collegefootballdata.com/plays'
+BASE_URL='https://api.collegefootballdata.com/'
 
 def clean(games):
 
@@ -55,7 +55,15 @@ def get_url(url):
 
 def get_pbp(year, season_type, week):
     api = BASE_URL
-    url_append = '?seasonType='+str(season_type)+'&year='+str(year)+'&week='+str(week)
+    url_append = 'plays?seasonType='+str(season_type)+'&year='+str(year)+'&week='+str(week)
+    req_url = api + url_append
+    json = get_url(req_url)
+    df = json_normalize(json)
+    return df
+
+def get_drives(year, season_type, week):
+    api = BASE_URL
+    url_append = 'drives?seasonType='+str(season_type)+'&year='+str(year)+'&week='+str(week)
     req_url = api + url_append
     json = get_url(req_url)
     df = json_normalize(json)
@@ -69,17 +77,21 @@ def save_pbp(pbp, year):
     pbp.to_csv(file_path, index=False)
     return
 
-def add_gameid(pbp, year, season_type, week):
-    if 'home' in list(pbp):
-        if season_type == 'regular':
-            st = 'REG'
-        elif season_type == 'postseason':
-            st= 'POST'
-        pbp['game_id'] = str(year) + st + str(week) + pbp['home'] +'v'+ pbp['away']
-        pbp['game_id'] = pbp['game_id'].str.replace(" ","")
-        pbp['game_id'] = pbp['game_id'].str.lower()
+def save_drives(pbp, year):
+    dir = './output/'+str(year)+'/'
+    # create directory if it doesn't exist
+    pathlib.Path(dir).mkdir(parents=True, exist_ok=True)
+    file_path = dir + str(year)+'_drives.csv'
+    pbp.to_csv(file_path, index=False)
+    return
+
+def add_time(pbp, year, season_type, week):
+    pbp['season'] = year
+    pbp['week'] = week
+    pbp['season_type'] = season_type
+
     return pbp
-    
+
 if __name__ == "__main__":
     game_list = get_game_list()
 
@@ -91,22 +103,38 @@ if __name__ == "__main__":
     for year in years:
         print('GATHERING ' + str(year) + ' SEASON PLAY BY PLAY DATA')
         season_pbp = pd.DataFrame()
+        season_drives = pd.DataFrame()
         for rp in reg_post:
             if rp == 'regular':
                 for week in tqdm(weeks):
                     season_type = 'regular'
                     week_pbp = get_pbp(year, season_type, week)
-                    week_pbp = add_gameid(week_pbp, year, season_type, week)
-                    season_pbp = pd.concat([season_pbp, week_pbp])
+                    week_pbp = add_time(week_pbp, year, season_type, week)
+                    season_pbp = pd.concat([season_pbp, week_pbp],sort=False)
+                    if 'start_time.hours' in list(season_pbp):
+                        season_pbp = season_pbp.drop(columns=['start_time.hours','end_time.hours'])
+                    drives = get_drives(year,season_type,week)
+                    if 'start_time.hours' in list(drives):
+                        drives = drives.drop(columns=['start_time.hours','end_time.hours'])
+                    season_drives = pd.concat([season_drives,drives],sort=False)
+
             else:
                 week = 1
                 season_type = 'postseason'
                 post_pbp = get_pbp(year, season_type, week)
-                post_pbp = add_gameid(post_pbp, year, season_type, week)
-                season_pbp = pd.concat([season_pbp, post_pbp])
-
+                post_pbp = add_time(post_pbp, year, season_type, week)
+                if 'start_time.hours' in list(post_pbp):
+                    post_pbp = post_pbp.drop(columns=['start_time.hours','end_time.hours'])
+                season_pbp = pd.concat([season_pbp, post_pbp],sort=False)
+                post_drives = get_drives(year,season_type,week)
+                if 'start_time.hours' in list(post_drives):
+                    post_drives = post_drives.drop(columns=['start_time.hours','end_time.hours'])
+                season_drives = pd.concat([season_drives,post_drives],sort=False)
 
         save_pbp(season_pbp, year)
+        save_drives(season_drives, year)
+
+
 
 
 
